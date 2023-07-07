@@ -14,10 +14,14 @@ import com.example.dinner.service.SetMealDishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -32,11 +36,15 @@ public class DishController {
     @Autowired
     private CategoryService categoryService;
     @Autowired
-    private SetMealDishService setMealDishService;
+    private RedisTemplate redisTemplate;
 
     @PostMapping
     public R<String> addDish(@RequestBody DishDto dishDto) {
         dishService.saveWithFlavor(dishDto);
+        //清除缓存
+        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
+        redisTemplate.delete(key);
+
         return R.success("新增菜品成功");
     }
 
@@ -56,12 +64,16 @@ public class DishController {
     @PutMapping
     public R<String> updateByIdWithFlavor(@RequestBody DishDto dishDto) {
         dishService.updateByIdWithFlavor(dishDto);
+        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
+        redisTemplate.delete(key);
         return R.success("修改成功");
     }
 
     @PostMapping("/status/{status}")
     public R<String> updateStatus(@PathVariable int status, Long[] ids) {
         dishService.updateStatus(status, ids);
+        Set keys = redisTemplate.keys("dish*");
+        redisTemplate.delete(keys);
         return R.success("修改成功");
     }
 
@@ -86,6 +98,17 @@ public class DishController {
 
     @GetMapping("/list")
     public R<List<DishDto>> listByiD(Dish dish) {
+        List<DishDto> dishDto=null;
+        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        dishDto = (List<DishDto>) valueOperations.get(key);
+
+        if (dishDto!=null){
+            return R.success(dishDto);
+        }
+
+
         LambdaQueryWrapper<Dish> lqw = new LambdaQueryWrapper<>();
         lqw.eq(!StringUtils.isEmpty(dish.getCategoryId()), Dish::getCategoryId, dish.getCategoryId());
         lqw.eq(Dish::getStatus, 1);
@@ -93,7 +116,7 @@ public class DishController {
         lqw.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> dishes = dishService.list(lqw);
 
-        List<DishDto> dishDto=dishes.stream().map((res)->{
+        dishDto=dishes.stream().map((res)->{
             DishDto dishDto1=new DishDto();
 
             BeanUtils.copyProperties(res,dishDto1);
@@ -112,6 +135,8 @@ public class DishController {
             return dishDto1;
 
         }).collect(Collectors.toList());
+
+        valueOperations.set(key,dishDto,60, TimeUnit.MINUTES);
 
         return R.success(dishDto);
 
