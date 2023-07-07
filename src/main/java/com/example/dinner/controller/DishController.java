@@ -80,6 +80,8 @@ public class DishController {
     @DeleteMapping
     public R<String> delete(@RequestParam List<Long> ids) {
         dishService.remove(ids);
+        Set keys = redisTemplate.keys("dish*");
+        redisTemplate.delete(keys);
         return R.success("删除成功");
     }
 

@@ -48,11 +48,9 @@ public class LoginCheckFilter implements Filter {
             chain.doFilter(req, resp);
             return;
         }
-
         if (req.getSession().getAttribute("employee") != null) {
             Long id = (Long) req.getSession().getAttribute("employee");
             BaseContext.setCurrentId(id);
-
             chain.doFilter(req, resp);
             return;
         }
