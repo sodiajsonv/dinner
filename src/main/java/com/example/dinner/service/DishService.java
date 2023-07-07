@@ -4,9 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.dinner.dto.DishDto;
 import com.example.dinner.entity.Dish;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+@Transactional
 public interface DishService extends IService<Dish> {
 
     void saveWithFlavor(DishDto dishDto);

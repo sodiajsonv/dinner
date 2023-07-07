@@ -14,6 +14,8 @@ import com.example.dinner.service.SetMealDishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.StringUtils;
@@ -39,11 +41,12 @@ public class DishController {
     private RedisTemplate redisTemplate;
 
     @PostMapping
+    @CacheEvict(value = "dishCache",allEntries = true)
     public R<String> addDish(@RequestBody DishDto dishDto) {
         dishService.saveWithFlavor(dishDto);
-        //清除缓存
-        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
-        redisTemplate.delete(key);
+//        清除缓存
+//        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
+//        redisTemplate.delete(key);
 
         return R.success("新增菜品成功");
     }
@@ -62,26 +65,29 @@ public class DishController {
     }
 
     @PutMapping
+    @CacheEvict(value = "dishCache",allEntries = true)
     public R<String> updateByIdWithFlavor(@RequestBody DishDto dishDto) {
         dishService.updateByIdWithFlavor(dishDto);
-        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
-        redisTemplate.delete(key);
+//        String key="dish_"+dishDto.getCategoryId()+"_"+dishDto.getStatus();
+//        redisTemplate.delete(key);
         return R.success("修改成功");
     }
 
     @PostMapping("/status/{status}")
+    @CacheEvict(value = "dishCache",allEntries = true)
     public R<String> updateStatus(@PathVariable int status, Long[] ids) {
         dishService.updateStatus(status, ids);
-        Set keys = redisTemplate.keys("dish*");
-        redisTemplate.delete(keys);
+//        Set keys = redisTemplate.keys("dish*");
+//        redisTemplate.delete(keys);
         return R.success("修改成功");
     }
 
     @DeleteMapping
+    @CacheEvict(value = "dishCache",allEntries = true)
     public R<String> delete(@RequestParam List<Long> ids) {
         dishService.remove(ids);
-        Set keys = redisTemplate.keys("dish*");
-        redisTemplate.delete(keys);
+//        Set keys = redisTemplate.keys("dish*");
+//        redisTemplate.delete(keys);
         return R.success("删除成功");
     }
 
@@ -99,16 +105,17 @@ public class DishController {
 //    }
 
     @GetMapping("/list")
+    @Cacheable(value = "dishCache",key = "#dish.categoryId+'_'+#dish.status")
     public R<List<DishDto>> listByiD(Dish dish) {
-        List<DishDto> dishDto=null;
-        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
 
-        ValueOperations valueOperations = redisTemplate.opsForValue();
-        dishDto = (List<DishDto>) valueOperations.get(key);
-
-        if (dishDto!=null){
-            return R.success(dishDto);
-        }
+//        List<DishDto> dishDto=null;
+//        String key="dish_"+dish.getCategoryId()+"_"+dish.getStatus();
+//        ValueOperations valueOperations = redisTemplate.opsForValue();
+//        dishDto = (List<DishDto>) valueOperations.get(key);
+//
+//        if (dishDto!=null){
+//            return R.success(dishDto);
+//        }
 
 
         LambdaQueryWrapper<Dish> lqw = new LambdaQueryWrapper<>();
@@ -118,7 +125,7 @@ public class DishController {
         lqw.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> dishes = dishService.list(lqw);
 
-        dishDto=dishes.stream().map((res)->{
+        List<DishDto> dishDto=dishes.stream().map((res)->{
             DishDto dishDto1=new DishDto();
 
             BeanUtils.copyProperties(res,dishDto1);
@@ -138,7 +145,7 @@ public class DishController {
 
         }).collect(Collectors.toList());
 
-        valueOperations.set(key,dishDto,60, TimeUnit.MINUTES);
+//        valueOperations.set(key,dishDto,60, TimeUnit.MINUTES);
 
         return R.success(dishDto);
 
