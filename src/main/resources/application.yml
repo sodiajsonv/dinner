@@ -1,5 +1,5 @@
 dish:
-  path: D:\Dish\
+  path: /images/
 
 
 server:
@@ -10,11 +10,11 @@ spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://192.168.122.131:3306/dinner?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://43.138.195.55:3306/dinner?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: root
       password: 123456
   redis:
-    host: 192.168.122.131
+    host: 43.138.195.55
     port: 6379
     password: 123456
     database: 0

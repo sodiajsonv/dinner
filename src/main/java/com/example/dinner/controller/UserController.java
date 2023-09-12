@@ -51,7 +51,7 @@ public class UserController {
             ValueOperations valueOperations = redisTemplate.opsForValue();
             valueOperations.set(phone, code, 5, TimeUnit.MINUTES);
         }
-        return R.success("手机验证码发送回成功");
+        return R.success("手机验证码发送成功");
     }
 
     @PostMapping("/login")
